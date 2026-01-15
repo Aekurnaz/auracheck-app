@@ -8,7 +8,77 @@ import io
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+import streamlit as st
+import os
+import json
+import PIL.Image
+from google import genai
+from PIL import ImageDraw, ImageFont, ImageOps
+import io
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
+# --- SAYFA AYARLARI ---
+st.set_page_config(
+    page_title="AuraCheck", 
+    page_icon="💀", 
+    layout="centered", 
+    initial_sidebar_state="collapsed"
+)
+
+# --- CSS (Tasarım) ---
+st.markdown("""
+<style>
+    .stButton>button {
+        width: 100%;
+        background-color: #FF4B4B;
+        color: white;
+        font-weight: bold;
+        border-radius: 10px;
+        padding: 15px;
+    }
+    .stButton>button:hover {
+        background-color: #FF0000;
+        color: white;
+    }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# --- GOOGLE SHEETS KAYIT (HATA GÖSTEREN VERSİYON) ---
+def save_to_sheet(puan, yorum):
+    try:
+        # 1. Secrets Kontrolü
+        if "gcp_service_account" not in st.secrets:
+            st.error("🚨 HATA: Streamlit Secrets içinde [gcp_service_account] bölümü bulunamadı!")
+            return False
+
+        # 2. Bağlantı Kurma
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
+        
+        # 3. Dosyayı Bulma
+        # DİKKAT: Senin Google Sheet dosyanın adı tam olarak "AuraDB" olmalı.
+        sheet_name = "AuraDB" 
+        sheet = client.open(sheet_name).sheet1
+        
+        # 4. Veriyi Hazırlama
+        zaman = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 5. Kaydetme
+        sheet.append_row([zaman, puan, yorum, "gemini-flash-latest"])
+        
+        # Başarılı olursa yeşil mesaj göster
+        st.success(f"✅ Veri '{sheet_name}' tablosuna kaydedildi!")
+        return True
+        
+    except gspread.SpreadsheetNotFound:
+        st.error(f"🚨 HATA: Google Drive'ında '{sheet_name}' ad
 # --- AYARLAR ---
 st.set_page_config(page_title="AuraCheck", page_icon="💀", layout="centered", initial_sidebar_state="collapsed")
 
